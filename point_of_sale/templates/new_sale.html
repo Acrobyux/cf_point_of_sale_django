@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block style %}
+    <style>
+        /* Estilo para el botón de vender */
+        #checkout-btn {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Estilo para el botón de vender cuando está deshabilitado */
+        #checkout-btn:disabled {
+            background-color: #6c757d;
+            color: #fff;
+            cursor: not-allowed;
+        }
+
+        /* Estilos para la lista de e-mails sugeridos del cliente. */
+        #email-suggestions {
+            display: none;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 5px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        #email-suggestions li {
+            padding: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            color: #333;
+        }
+
+        #email-suggestions li:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Nueva Venta</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'point_of_sale:index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item active">Nueva Venta</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <div class="container mt-4">
+        <form id="product-form">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Ingrese el ID del producto..." id="product-code">
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-primary"><strong>Agregar</strong></button>
+                </div>
+            </div>
+        </form>
+        <br>
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Código</th>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Categoria</th>
+                <th>Precio</th>
+                <th>Talla</th>
+                <th>Color</th>
+                <th>Cantidad</th>
+                <th>Stock</th>
+                <th>Total</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody id="cart-items">
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="8" class="text-right"><strong>Total:</strong></td>
+                    <td id="cart-total">$0.00</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td class="text-left" colspan="1"><strong>Email:</strong></td>
+                    <td>
+                        <input type="text" style="width: 350px;" class="form-control" id="email-input">
+                        <ul id="email-suggestions"></ul>
+                    </td>
+                    <td colspan="3" class="text-right"><strong>Pago:</strong></td>
+                    <td>
+                        <div class="input-group">
+                            <input type="number" min="1" style="width: 100px;" class="form-control" id="payment-input" disabled>
+                        </div>
+                    </td>
+                    <td class="text-left"><strong>Cambio:</strong></td>
+                    <td>
+                        <div class="input-group">
+                            <input type="number" min="0" style="width: 100px; border: 1px solid #ced4da; border-radius: 4px; background-color: #f8f9fa;" class="form-control" id="change-output" disabled>
+                        </div>
+                    </td>
+                    <td colspan="2" class="text-right">
+                        <button type="button" class="btn btn-success" id="checkout-btn" disabled onclick="sell()"><strong>Vender</strong></button>
+                        <br>
+                        <small id="change-text"></small>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+
+    <script>
+        document.querySelector('#product-code').focus();
+        const form = document.querySelector('#product-form');
+        const cartItems = document.querySelector('#cart-items');
+        const cartTotal = document.querySelector('#cart-total');
+        const checkoutBtn = document.querySelector('#checkout-btn');
+        const productInput = document.querySelector('#product-code');
+        const productSuggestionsList = document.getElementById('productSuggestions');
+        const emailInput = document.querySelector('#email-input');
+        const emailSuggestionsList = document.querySelector('#email-suggestions');
+        const paymentInput = document.querySelector('#payment-input');
+        const changeOutput = document.querySelector('#change-output');
+        const article_scan_beep = new Audio("{% static 'sound/article_scan_beep.wav' %}")
+        const sale_completed = new Audio("{% static 'sound/sale_completed.wav' %}")
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const productCode = document.querySelector('#product-code').value;
+            const product_already_in_cart = check_if_product_already_exists(productCode);
+
+            if (product_already_in_cart) {
+                $(document).Toasts('create', {
+                    title: 'Producto ya agregado',
+                    body: 'El producto que intentas agregar ya se encuentra en el carrito.',
+                    icon: 'fas fa-exclamation-triangle',
+                    class: 'bg-warning',
+                    position: 'topRight',
+                    autohide: true,
+                    delay: 3000
+                });
+            } else {
+                let url = "{% url 'point_of_sale:get_product' product_id=0 %}".replace("0", productCode);
+                const response = await fetch(url);
+                let data = await response.json();
+                const product = data.product;
+
+                if (!data.success) {
+                    $(document).Toasts('create', {
+                        title: data.message,
+                        body: 'El producto que intentas agregar no existe o esta deshabilitado.',
+                        icon: 'fas fa-exclamation-triangle',
+                        class: 'bg-warning',
+                        position: 'topRight',
+                        autohide: true,
+                        delay: 3000
+                    });
+                } else {
+                    article_scan_beep.play()
+                    const cartItem = document.createElement('tr');
+                    cartItem.innerHTML = `
+                  <td class="product_id">${product.id}</td>
+                  <td><img src="data:image/png;base64,${product.image}" width="180px"></td>
+                  <td>${product.name}</td>
+                  <td>${product.category}</td>
+                  <td>
+                    <input type="number" min="1" value="${product.sold_price}" class="form-control price" style="width: 90px;">
+                  </td>
+                  <td>${product.size}</td>
+                  <td>${product.color}</td>
+                  <td>
+                    <input type="number" min="1" max="${product.inventory_quantity}" value="1" class="form-control quantity" style="width: 90px;">
+                  </td>
+                  <td>${product.inventory_quantity}</td>
+                  <td class="total">${product.sold_price}</td>
+                  <td>
+                    <button type="button" class="btn btn-danger" data-code="${product.code}" title="Eliminar">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </td>
+                `;
+                    cartItems.appendChild(cartItem);
+                    updateCartTotal();
+                }
+            }
+        });
+
+        cartItems.addEventListener('change', (event) => {
+            if (event.target.classList.contains('quantity')) {
+                const quantity = parseFloat(event.target.value);
+                const price = parseFloat(event.target.closest('tr').querySelector('.price').value);
+                const totalCell = event.target.parentElement.nextElementSibling.nextElementSibling;
+                const total = (quantity * price).toFixed(2);
+                totalCell.textContent = total;
+                updateCartTotal();
+            } else if (event.target.classList.contains('price')) {
+                const price = parseFloat(event.target.value);
+                const quantity = parseFloat(event.target.closest('tr').querySelector('.quantity').value);
+                const totalCell = event.target.parentElement.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling.nextElementSibling;
+                const total = (quantity * price).toFixed(2);
+                totalCell.textContent = total;
+                updateCartTotal();
+            }
+        });
+
+        cartItems.addEventListener('click', async (event) => {
+            if (event.target.classList.contains('btn-danger')) {
+                const row = event.target.parentElement.parentElement;
+                cartItems.removeChild(row);
+                updateCartTotal();
+            }
+        });
+
+        function updateCartTotal() {
+            document.querySelector('#product-code').value = '';
+            document.querySelector('#product-code').focus();
+            document.querySelector('#payment-input').value = '';
+            document.querySelector('#change-output').value = '';
+            const totalCells = cartItems.querySelectorAll('.total');
+            let total = 0;
+            totalCells.forEach(cell => {
+                total += parseFloat(cell.textContent);
+            });
+            cartTotal.textContent = `$${total.toFixed(2)}`;
+            paymentInput.disabled = (total <= 0);
+            checkoutBtn.disabled = (total <= 0 || paymentInput.value < total);
+        }
+
+        function check_if_product_already_exists(product_id) {
+            const product_ids = document.querySelectorAll('.product_id');
+            let exists = false;
+            product_ids.forEach(id => {
+                if (id.textContent == product_id) {
+                    exists = true;
+                }
+            });
+            return exists;
+        }
+
+        paymentInput.addEventListener('input', (event) => {
+            if(event.target.value !== "")
+            {
+                const payment = parseFloat(event.target.value);
+                const total = parseFloat(cartTotal.textContent.substring(1));
+                const change = (payment - total).toFixed(2);
+                changeOutput.value = parseFloat(change);
+                checkoutBtn.disabled = (payment < total);
+            }
+            else
+            {
+                checkoutBtn.disabled = true;
+            }
+        });
+
+        const get_cart_items = () => {
+            const cart_items = [];
+            const rows = cartItems.querySelectorAll('tr');
+            rows.forEach(row => {
+                const product_id = row.querySelector('.product_id').textContent;
+                const price = row.querySelector('.price').value;
+                const quantity = row.querySelector('.quantity').value;
+                const total = row.querySelector('.total').textContent;
+                cart_items.push({
+                    product_id,
+                    price,
+                    quantity,
+                    total
+                });
+            });
+            return cart_items;
+        }
+
+        const sell = async () => {
+            const cart_items = get_cart_items();
+            const url = "{% url 'point_of_sale:new_sale' %}";
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    cart: get_cart_items(),
+                    client_email: emailInput.value,
+                    payment: paymentInput.value,
+                    change: changeOutput.value
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    sale_completed.play()
+                    let checkout_btn = document.querySelector('#checkout-btn');
+                    checkout_btn.disabled = true;
+                    $(document).Toasts('create', {
+                        title: 'Venta registrada',
+                        body: 'Venta registrada con exito.',
+                        icon: 'fas fa-check-circle',
+                        class: 'bg-success',
+                        position: 'topRight',
+                        autohide: true,
+                        delay: 3000,
+                        onClose: function () {
+                            console.log('redirect to /');
+                            window.location.href = '/';
+                        }
+                    });
+                }
+            }
+        }
+
+        productInput.addEventListener('input', async event => {
+        let inputVal = productInput.value;
+
+        if (inputVal.length > 2) {
+            try {
+                let url = `{% url 'point_of_sale:get_product_suggestions' %}?q=${encodeURIComponent(inputVal)}`;
+                let response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    renderProductSuggestions(data.products);
+                }
+            } catch (error) {
+                console.error("Error fetching product suggestions:", error);
+            }
+        } else {
+            productSuggestionsList.innerHTML = ''; // Limpia la lista de sugerencias cuando el input está vacío
+        }
+    });
+
+    function renderProductSuggestions(products) {
+        productSuggestionsList.innerHTML = ''; // Limpia la lista de sugerencias antes de agregar nuevos elementos
+
+        products.forEach(product => {
+            const li = document.createElement('li');
+            const img = document.createElement('img');
+            img.src = product.image; // Asigna la imagen del producto
+            img.alt = product.name; // Asigna el nombre del producto como atributo "alt" de la imagen
+            img.style.width = '30px'; // Estilo de la imagen (puedes ajustarlo según tus necesidades)
+
+            const productName = document.createElement('span');
+            productName.textContent = product.name; // Nombre del producto
+
+            const stockQuantity = document.createElement('span');
+            stockQuantity.textContent = `Stock: ${product.inventory_quantity}`; // Cantidad en stock
+
+            li.appendChild(img);
+            li.appendChild(productName);
+            li.appendChild(stockQuantity);
+
+            productSuggestionsList.appendChild(li);
+        });
+    }
+
+        emailInput.addEventListener('input', async event => {
+        let inputVal = emailInput.value;
+
+        if (inputVal.length > 2) {
+            try {
+                let url = `{% url 'point_of_sale:get_client_email_suggestions' %}?q=${encodeURIComponent(inputVal)}`;
+                let response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    emailSuggestionsList.innerHTML = "";
+                    if(data.emails.length > 0){
+                        data.emails.forEach(email => {
+                        let li = document.createElement("li");
+                        li.textContent = email;
+                        emailSuggestionsList.appendChild(li);
+                    });
+                    emailSuggestionsList.style.display = "block";
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching email suggestions:", error);
+            }
+        } else {
+            emailSuggestionsList.innerHTML = "";
+            emailSuggestionsList.style.display = "none";
+        }
+    });
+
+
+        emailSuggestionsList.addEventListener("click", function(event) {
+        if (event.target.tagName === "LI") {
+            emailInput.value = event.target.textContent;
+            emailSuggestionsList.innerHTML = "";
+            emailSuggestionsList.style.display = "none";
+        }
+    });
+    </script>
+{% endblock %}

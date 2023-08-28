@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Detalle de venta {{ sale.get_folio }}</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'point_of_sale:index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item active">Detalle de venta</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <div class="content">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title m-0">Productos de la venta</h5>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-striped table-sm" id="dt_table">
+                                <thead>
+                                    <tr>
+                                        <th>Codigo</th>
+                                        <th>Producto</th>
+                                        <th>Categoria</th>
+                                        <th>Imagen</th>
+                                        <th>Talla</th>
+                                        <th>Color</th>
+                                        <th>Cantidad</th>
+                                        <th>Precio unitario</th>
+                                        <th>Ganancia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for sale_item in sale.saleitem_set.all %}
+                                        <tr>
+                                            <td>
+                                                <a href="{% url 'point_of_sale:product_detail' sale_item.product_id %}">
+                                                    {{ sale_item.product_id }}
+                                                </a>
+                                            </td>
+                                            <td>{{ sale_item.product.name }}</td>
+                                            <td>{{ sale_item.product.category }}</td>
+                                            <td>
+                                                <img src="data:image/png;base64,{{ sale_item.product.get_image_as_base64 }}" width="180px">
+                                            </td>
+                                            <td>{{ sale_item.product.size }}</td>
+                                            <td>{{ sale_item.product.color }}</td>
+                                            <td>{{ sale_item.quantity }}</td>
+                                            <td>{{ sale_item.price }}</td>
+                                            <td>{{ sale_item.gain }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content -->
+{% endblock %}

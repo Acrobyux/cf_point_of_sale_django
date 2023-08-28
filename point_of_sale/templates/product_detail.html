@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Detalle de producto #{{ product.id }}</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'point_of_sale:index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item active">Detalle de producto</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <img src="data:image/png;base64,{{ product.get_image_as_base64 }}" class="card-img-top"
+                         alt="{{ product.name }}">
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title">{{ product.name }}</h2>
+                        <br>
+                        <hr>
+                        <p class="card-text"><strong>Categoría:</strong> {{ product.category }}</p>
+                        <p class="card-text"><strong>Precio (Venta):</strong> {{ product.sold_price }}</p>
+                        <p class="card-text"><strong>Precio (Compra):</strong> {{ product.buy_price }}</p>
+                        <p class="card-text"><strong>Existencias:</strong> {{ product.inventory_quantity }}</p>
+                        <p class="card-text"><strong>Talla:</strong> {{ product.size }}</p>
+                        <p class="card-text"><strong>Color:</strong> {{ product.color }}</p>
+                        {% if product.is_active %}
+                            <p class="card-text text-success"><strong>Estado:</strong> Activo</p>
+                        {% else %}
+                            <p class="card-text text-danger"><strong>Estado:</strong> Inactivo</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

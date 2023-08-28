@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% block content %}
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Campañas ({{ campaigns.count }})</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'point_of_sale:index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item active">Campañas</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+    <!-- Main content -->
+    <div class="content">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title m-0">Tabla de campañas</h5>
+                            {#              <a href="{% url 'point_of_sale:new_sale' %}" class="btn btn-primary float-right">Registrar venta</a>#}
+                        </div>
+                        <div class="card-body">
+                            <table class="table" id="dt_table">
+                                <thead>
+                                <tr>
+                                    <th scope="col">Campaña</th>
+                                    <th scope="col">Imagen</th>
+                                    <th scope="col">Fecha (Inicio)</th>
+                                    <th scope="col">Fecha (Fin)</th>
+                                    <th scope="col">Ventas</th>
+                                    <th scope="col">Cover</th>
+                                    <th scope="col">Ganancia (Bruta)</th>
+                                    <th scope="col">Ganancia (Neta)</th>
+                                    <th scope="col">Estado</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% if campaigns.count > 0 %}
+                                    {% for campaign in campaigns %}
+                                        <tr>
+                                            <th scope="row">
+                                                <a href="{% url 'point_of_sale:campaign_detail' campaign.id %}">
+                                                    {{ campaign }}
+                                                </a>
+                                            </th>
+                                            <td>
+                                                <img src="data:image/png;base64,{{ campaign.get_image_as_base64 }}"
+                                                     width="180px">
+                                            </td>
+                                            <td>{{ campaign.start_date|date:'d/m/Y H:i' }}</td>
+                                            <td>{{ campaign.end_date|date:'d/m/Y H:i' }}</td>
+                                            <td>{{ campaign.sale_set.count }}</td>
+                                            <td>${{ campaign.cover }}</td>
+                                            <td>${{ campaign.gain }}</td>
+                                            <td>${{ campaign.net_gain }}</td>
+                                            <td>
+                                                {% if campaign.is_active %}
+                                                    <span class="badge badge-success">Activo</span>
+                                                {% else %}
+                                                    <span class="badge badge-danger">Inactivo</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="5">
+                                            <center>
+                                                Aún no hay campaignos registrados.
+                                            </center>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /.content -->
+{% endblock %}

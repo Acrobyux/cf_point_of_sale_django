@@ -1,0 +1,87 @@
+{% extends 'base_login.html' %}
+{% load static %}
+{% block content %}
+
+<div class="container">
+  <div class="row align-items-center justify-content-center">
+    <div class="col-md-6">
+        <br><br><br>
+      <div class="card">
+        <div class="card-header text-center">
+          <img src="{% static 'img/logo.jpeg' %}" alt="Logo" class="rounded-circle mb-3">
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{% url 'login' %}">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger" role="alert">
+                {{ form.non_field_errors }}
+              </div>
+            {% endif %}
+            <div class="form-group">
+              <input type="text" name="username" class="form-control placeholder-style{% if form.username.errors %} is-invalid{% endif %}" placeholder="Usuario">
+              {% if form.username.errors %}
+                {% for error in form.username.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+            </div>
+          <div class="form-group">
+              <div class="input-group">
+                <input type="password" name="password" class="form-control placeholder-style" placeholder="Contraseña">
+                  {% if form.password.errors %}
+                {% for error in form.password.errors %}
+                  <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+                <div class="input-group-append">
+                  <span class="input-group-text">
+                    <i class="fa fa-eye-slash" id="toggle-password"></i>
+                  </span>
+                </div>
+              </div>
+          </div>
+            <div class="form-group">
+              <button type="submit" class="btn btn-primary btn-block">Iniciar sesión</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+  img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 50%;
+  }
+  .placeholder-style::-webkit-input-placeholder {
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  .placeholder-style::-moz-placeholder {
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  .placeholder-style:-ms-input-placeholder {
+    color: #6c757d;
+    font-style: italic;
+  }
+</style>
+<script>
+  const togglePassword = document.querySelector('#toggle-password');
+  const password = document.querySelector('input[name="password"]');
+
+  togglePassword.addEventListener('click', function (e) {
+    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+    password.setAttribute('type', type);
+    this.classList.toggle('fa-eye-slash');
+    this.classList.toggle('fa-eye');
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% block style %}
+    <style>
+        .table-wrapper {
+            height: 550px; /* Altura fija */
+            overflow-y: auto; /* Habilite el desplazamiento vertical */
+        }
+
+        .thead-fixed {
+            position: sticky;
+            top: 0;
+            background-color: white;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+
+    <!-- Modal: Finalizar Campana -->
+    <div class="modal fade" id="modalFinalizarCampana" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="myModalLabel">Finalizar Campana</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Esta seguro de querer dar por finalizada la Campana ?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" data-dismiss="modal" id="btn_end_campaign">Finalizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+        <div class="container">
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1 class="m-0">Detalle de campaña #{{ campaign.id }}</h1>
+                </div><!-- /.col -->
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a href="{% url 'point_of_sale:index' %}">Inicio</a></li>
+                        <li class="breadcrumb-item"><a href="#" onclick="history.back(); return false;">Campañas</a>
+                        </li>
+                        <li class="breadcrumb-item active">Detalle de campaña</li>
+                    </ol>
+                </div><!-- /.col -->
+            </div><!-- /.row -->
+        </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card">
+                    <img src="data:image/png;base64,{{ campaign.get_image_as_base64 }}" class="card-img-top"
+                         alt="{{ campaign.name }}" style="max-height: 550px;">
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h2 class="card-title">{{ campaign.name }}</h2>
+                        <br>
+                        <hr>
+                        <p class="card-text"><strong>Lugar:</strong> {{ campaign.place }}</p>
+                        <p class="card-text"><strong>Direccion:</strong> {{ campaign.address }}</p>
+                        <p class="card-text"><strong>Fecha (Inicio):</strong> {{ campaign.start_date }}</p>
+                        <p class="card-text"><strong>Fecha (Fin):</strong> {{ campaign.end_date }}</p>
+                        {% if campaign.is_active %}
+                            <p class="card-text text-success"><strong>Estado:</strong> Activo</p>
+                        {% else %}
+                            <p class="card-text text-danger"><strong>Estado:</strong> Inactivo</p>
+                        {% endif %}
+                        <p class="card-text"><strong>Ventas:</strong> {{ campaign.sale_set.count }}</p>
+                        <p class="card-text"><strong>Productos (Vendidos):</strong> {{ products_sold_count }}</p>
+                        <p class="card-text"><strong>Cover:</strong> ${{ campaign.cover }}</p>
+                        <p class="card-text"><strong>Ganancia (Bruta):</strong> ${{ campaign.brute_gain }}</p>
+                        <p class="card-text"><strong>Ganancia (Neta):</strong> ${{ campaign.gross_gain }}</p>
+                        {% if campaign.is_active %}
+                            <button class="btn btn-danger" style="width: 100%;" id="btn_open_modal"><b>FINALIZAR</b></button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title m-0">Productos Vendidos ( {{ products_sold_count }} )</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-wrapper">
+                            <table class="table table-sm" id="dt_table">
+                                <thead class="thead-fixed">
+                                <tr>
+                                    <th scope="col">Producto</th>
+                                    <th scope="col">Imagen</th>
+                                    <th scope="col">Categoria</th>
+                                    <th scope="col">Estado</th>
+                                    <th scope="col">Stock</th>
+                                    <th scope="col">Precio (Venta)</th>
+                                    <th scope="col">Ganancia</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for sale in campaign.sale_set.all %}
+                                    {% for sale_item in sale.saleitem_set.all %}
+                                        <tr>
+                                            <th scope="row">{{ sale_item.product }}</th>
+                                            <td>
+                                                <img src="data:image/png;base64,{{ sale_item.product.get_image_as_base64 }}"
+                                                     width="85px">
+                                            </td>
+                                            <td>{{ sale_item.product.category }}</td>
+                                            <td>
+                                                {% if sale_item.product.is_active %}
+                                                    <span class="badge badge-success">Activo</span>
+                                                {% else %}
+                                                    <span class="badge badge-danger">Inactivo</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ sale_item.product.inventory_quantity }}</td>
+                                            <td>${{ sale_item.price }}</td>
+                                            <td>${{ sale_item.gain }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    const btn_open_modal = document.querySelector("#btn_open_modal");
+    const btn_end_campaign = document.querySelector("#btn_end_campaign");
+
+    btn_open_modal.addEventListener("click", event => {
+        $("#modalFinalizarCampana").modal("show");
+    });
+
+    btn_end_campaign.addEventListener("click", async event => {
+        try {
+            let url = "{% url 'point_of_sale:end_campaign' campaign.id %}";
+            let response = await fetch(url);
+            if (response.ok)
+            {
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error("Error fetching email suggestions:", error);
+        }
+    });
+
+    </script>
+{% endblock %}
