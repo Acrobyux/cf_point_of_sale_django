@@ -19,7 +19,7 @@ Este proyecto es un sistema de gestión diseñado para negocios que participan e
 
 ## Instalación
 
-1. Clona este repositorio: `git clone https://github.com/tu-usuario/tu-proyecto.git`
+1. Clona este repositorio: `git clone https://github.com/Acrobyux/cf_point_of_sale_django.git`
 2. Ve al directorio del proyecto: `cd tu-proyecto`
 3. Crea un entorno virtual (opcional pero recomendado): `virtualenv venv`
 4. Activa el entorno virtual: 
